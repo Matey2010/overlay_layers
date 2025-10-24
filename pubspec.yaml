@@ -1,0 +1,14 @@
+name: overlay_layers
+description: "A flexible overlay system for Flutter with support for popups, modals, toasts, and dialogs"
+version: 0.1.0
+
+environment:
+  sdk: ^3.9.2
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_lints: ^5.0.0
