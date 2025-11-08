@@ -1,3 +1,3 @@
-## 0.0.1
+## 0.1.0
 
-* TODO: Describe initial release.
+* Initial release with popup support, overlay management system, type-safe data passing, positioning system

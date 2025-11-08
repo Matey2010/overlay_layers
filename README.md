@@ -18,8 +18,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  overlay_layers:
-    path: ../overlay_layers
+  overlay_layers: ^0.1.0
 ```
 
 ## Usage
