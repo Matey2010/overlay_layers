@@ -18,7 +18,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  overlay_layers: ^0.1.0
+  overlay_layers: ^0.2.0
 ```
 
 ## Usage
@@ -36,6 +36,24 @@ void main() {
   );
 }
 ```
+
+**Advanced:** For precise control over where overlays render in your widget tree, use the `includeContainer` parameter:
+
+```dart
+OverlayRoot(
+  includeContainer: false, // Manual control
+  child: MaterialApp(
+    home: Stack(
+      children: [
+        MyContent(),
+        const OverlayContainer(), // Place overlays exactly where needed
+      ],
+    ),
+  ),
+)
+```
+
+By default, `includeContainer` is `true`, automatically wrapping your app with `OverlayContainer`.
 
 ### 2. Open a popup
 
