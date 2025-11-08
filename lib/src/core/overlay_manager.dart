@@ -111,8 +111,8 @@ class OverlayProvider extends InheritedNotifier<OverlayManager> {
   }) : super(notifier: manager);
 
   static OverlayManager of(BuildContext context) {
-    final provider =
-        context.dependOnInheritedWidgetOfExactType<OverlayProvider>();
+    final provider = context
+        .dependOnInheritedWidgetOfExactType<OverlayProvider>();
     if (provider == null) {
       throw FlutterError(
         'OverlayProvider not found in context.\n'
@@ -123,21 +123,45 @@ class OverlayProvider extends InheritedNotifier<OverlayManager> {
   }
 
   static OverlayManager? maybeOf(BuildContext context) {
-    final provider =
-        context.dependOnInheritedWidgetOfExactType<OverlayProvider>();
+    final provider = context
+        .dependOnInheritedWidgetOfExactType<OverlayProvider>();
     return provider?.notifier;
   }
 }
 
 /// Root widget that provides overlay functionality to the app
+///
+/// This widget sets up the OverlayProvider (via InheritedWidget) that manages
+/// all overlay state. Child widgets can access the overlay system through context.
+///
+/// The [includeContainer] parameter controls whether OverlayContainer is automatically
+/// included in the widget tree. When true (default), overlays render automatically.
+/// When false, you must manually place OverlayContainer somewhere in your tree.
+///
+/// How it works:
+/// 1. OverlayRoot creates OverlayProvider (makes manager available via context)
+/// 2. OverlayContainer looks up the manager via OverlayProvider.of(context)
+/// 3. OverlayContainer renders all active overlays on screen
+///
+/// This follows Flutter's standard pattern: provider creates context, consumer reads it.
 class OverlayRoot extends StatefulWidget {
   final Widget child;
   final OverlayManager? manager;
+
+  /// Whether to automatically include OverlayContainer in the widget tree.
+  ///
+  /// When true (default): OverlayContainer is automatically wrapped with your child
+  /// in a Stack, so overlays render immediately without additional setup.
+  ///
+  /// When false: You must manually add OverlayContainer widget somewhere in your tree.
+  /// Useful for advanced layouts where you want precise control over overlay positioning.
+  final bool includeContainer;
 
   const OverlayRoot({
     super.key,
     required this.child,
     this.manager,
+    this.includeContainer = true,
   });
 
   @override
@@ -170,15 +194,23 @@ class _OverlayRootState extends State<OverlayRoot> {
 
   @override
   Widget build(BuildContext context) {
+    Widget child = widget.child;
+
+    // Automatically include OverlayContainer if requested
+    if (widget.includeContainer) {
+      child = Stack(
+        children: [
+          widget.child,
+          const OverlayContainer(),
+        ],
+      );
+    }
+
     return OverlayProvider(
       manager: _manager,
       child: Overlay(
         key: _manager.overlayKey,
-        initialEntries: [
-          OverlayEntry(
-            builder: (context) => widget.child,
-          ),
-        ],
+        initialEntries: [OverlayEntry(builder: (context) => child)],
       ),
     );
   }
@@ -277,10 +309,8 @@ class OverlayDataContext<TData> {
       overlayId: provider.overlay.id,
       type: provider.overlay.type,
       data: provider.overlay.data,
-      updateData: (data) => provider.manager.updateOverlayData(
-        provider.overlay.id,
-        data,
-      ),
+      updateData: (data) =>
+          provider.manager.updateOverlayData(provider.overlay.id, data),
       close: ([finalData]) {
         if (finalData != null) {
           provider.manager.updateOverlayData(provider.overlay.id, finalData);
@@ -299,10 +329,8 @@ class OverlayDataContext<TData> {
       overlayId: provider.overlay.id,
       type: provider.overlay.type,
       data: provider.overlay.data,
-      updateData: (data) => provider.manager.updateOverlayData(
-        provider.overlay.id,
-        data,
-      ),
+      updateData: (data) =>
+          provider.manager.updateOverlayData(provider.overlay.id, data),
       close: ([finalData]) {
         if (finalData != null) {
           provider.manager.updateOverlayData(provider.overlay.id, finalData);

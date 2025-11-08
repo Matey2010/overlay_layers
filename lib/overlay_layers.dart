@@ -10,14 +10,9 @@ export 'src/core/types.dart'
     show OverlayInstance, OverlayType, OverlayCreateOptions;
 
 // Popup exports
-export 'src/popup/popup_controller.dart'
-    show PopupController, PopupDataContext;
+export 'src/popup/popup_controller.dart' show PopupController, PopupDataContext;
 export 'src/popup/popup_widgets.dart'
-    show
-        PopupScaffold,
-        AnimatedPopup,
-        PositionedPopup,
-        PopupPosition;
+    show PopupScaffold, AnimatedPopup, PositionedPopup, PopupPosition;
 
 // Future exports will be added here:
 // Toast functionality
