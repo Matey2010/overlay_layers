@@ -6,19 +6,22 @@ import '../core/types.dart';
 /// Provides convenient methods to open, close, and update popups
 class PopupController {
   final OverlayManager _manager;
+  final BuildContext _context;
 
-  PopupController(this._manager);
+  PopupController._(this._manager, this._context);
 
   /// Get controller from context
+  /// Uses the global singleton OverlayManager
   static PopupController of(BuildContext context) {
-    final manager = OverlayProvider.of(context);
-    return PopupController(manager);
+    return PopupController._(OverlayManager.instance, context);
   }
 
-  /// Try to get controller from context
-  static PopupController? maybeOf(BuildContext context) {
-    final manager = OverlayProvider.maybeOf(context);
-    return manager != null ? PopupController(manager) : null;
+  /// Get controller with custom manager (advanced use case)
+  static PopupController withManager(
+    BuildContext context,
+    OverlayManager manager,
+  ) {
+    return PopupController._(manager, context);
   }
 
   /// Open a new popup
@@ -39,6 +42,7 @@ class PopupController {
     OverlayCreateOptions<TData>? options,
   }) {
     return _manager.createOverlay<TData>(
+      context: _context,
       type: OverlayType.popup,
       builder: builder,
       options: options,
@@ -67,7 +71,7 @@ class PopupController {
   }
 
   /// Update data of a specific popup
-  void updateData<TData>(String popupId, TData data) {
+  void updatePopupData<TData>(String popupId, TData data) {
     _manager.updateOverlayData<TData>(popupId, data);
   }
 
@@ -90,7 +94,7 @@ class PopupDataContext<TData> {
   TData get data => _context.data;
 
   /// Update popup data (merges with current)
-  void updateData(TData data) => _context.updateData(data);
+  void updatePopupData(TData data) => _context.updateData(data);
 
   /// Close this popup
   void close([TData? finalData]) => _context.close(finalData);

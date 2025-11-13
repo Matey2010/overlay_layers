@@ -1,11 +1,5 @@
 // Core overlay system exports
-export 'src/core/overlay_manager.dart'
-    show
-        OverlayManager,
-        OverlayProvider,
-        OverlayRoot,
-        OverlayContainer,
-        OverlayDataContext;
+export 'src/core/overlay_manager.dart' show OverlayManager, OverlayDataContext;
 export 'src/core/types.dart'
     show OverlayInstance, OverlayType, OverlayCreateOptions;
 

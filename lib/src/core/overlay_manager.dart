@@ -3,19 +3,27 @@ import 'types.dart';
 import 'utils.dart';
 
 /// Core overlay manager that handles all overlay types (popup, toast, modal, dialog)
-/// Single source of truth for all overlays in the application
-class OverlayManager extends ChangeNotifier {
+/// Uses Flutter's native Overlay system under the hood
+class OverlayManager {
+  /// Global singleton instance
+  static final instance = OverlayManager._();
+
+  /// Private constructor for singleton
+  OverlayManager._();
+
+  /// Public constructor for custom instances (advanced use cases)
+  OverlayManager.custom();
+
   final List<OverlayInstance> _overlays = [];
-  final GlobalKey<OverlayState> _overlayKey = GlobalKey<OverlayState>();
+  final Map<String, OverlayEntry> _entries = {};
 
   /// All currently active overlays
   List<OverlayInstance> get overlays => List.unmodifiable(_overlays);
 
-  /// Global key for Flutter's Overlay widget
-  GlobalKey<OverlayState> get overlayKey => _overlayKey;
-
   /// Create a new overlay
+  /// Requires BuildContext to access Flutter's Overlay
   String createOverlay<TData>({
+    required BuildContext context,
     required OverlayType type,
     required WidgetBuilder builder,
     OverlayCreateOptions<TData>? options,
@@ -33,8 +41,20 @@ class OverlayManager extends ChangeNotifier {
       onClose: options?.onClose,
     );
 
+    // Create OverlayEntry that wraps the overlay with data provider
+    final entry = OverlayEntry(
+      builder: (context) => _OverlayDataProvider(
+        overlay: overlay,
+        manager: this,
+        child: Builder(builder: builder),
+      ),
+    );
+
     _overlays.add(overlay);
-    notifyListeners();
+    _entries[id] = entry;
+
+    // Insert into Flutter's Overlay (use rootOverlay for predictable behavior)
+    Overlay.of(context, rootOverlay: true).insert(entry);
 
     return id;
   }
@@ -44,9 +64,17 @@ class OverlayManager extends ChangeNotifier {
     final index = _overlays.indexWhere((o) => o.id == id);
     if (index != -1) {
       final overlay = _overlays[index];
+      final entry = _entries.remove(id);
+
+      // Call onClose callback
       overlay.onClose?.call(overlay.data);
+
+      // Remove entry from Flutter's Overlay if still mounted
+      if (entry?.mounted ?? false) {
+        entry!.remove();
+      }
+
       _overlays.removeAt(index);
-      notifyListeners();
     }
   }
 
@@ -54,9 +82,13 @@ class OverlayManager extends ChangeNotifier {
   void removeAllOverlays() {
     for (final overlay in _overlays) {
       overlay.onClose?.call(overlay.data);
+      final entry = _entries[overlay.id];
+      if (entry?.mounted ?? false) {
+        entry!.remove();
+      }
     }
     _overlays.clear();
-    notifyListeners();
+    _entries.clear();
   }
 
   /// Update overlay data
@@ -67,7 +99,12 @@ class OverlayManager extends ChangeNotifier {
       final updatedData = _mergeData(overlay.data, data);
       _overlays[index] = overlay.copyWith(data: updatedData);
       overlay.onDataChange?.call(updatedData);
-      notifyListeners();
+
+      // Trigger rebuild of the specific entry
+      final entry = _entries[id];
+      if (entry?.mounted ?? false) {
+        entry!.markNeedsBuild();
+      }
     }
   }
 
@@ -93,154 +130,6 @@ class OverlayManager extends ChangeNotifier {
     }
     // Otherwise, replace it
     return partial;
-  }
-
-  @override
-  void dispose() {
-    removeAllOverlays();
-    super.dispose();
-  }
-}
-
-/// Provider widget for OverlayManager
-class OverlayProvider extends InheritedNotifier<OverlayManager> {
-  const OverlayProvider({
-    super.key,
-    required OverlayManager manager,
-    required super.child,
-  }) : super(notifier: manager);
-
-  static OverlayManager of(BuildContext context) {
-    final provider = context
-        .dependOnInheritedWidgetOfExactType<OverlayProvider>();
-    if (provider == null) {
-      throw FlutterError(
-        'OverlayProvider not found in context.\n'
-        'Make sure your app is wrapped with OverlayProvider.',
-      );
-    }
-    return provider.notifier!;
-  }
-
-  static OverlayManager? maybeOf(BuildContext context) {
-    final provider = context
-        .dependOnInheritedWidgetOfExactType<OverlayProvider>();
-    return provider?.notifier;
-  }
-}
-
-/// Root widget that provides overlay functionality to the app
-///
-/// This widget sets up the OverlayProvider (via InheritedWidget) that manages
-/// all overlay state. Child widgets can access the overlay system through context.
-///
-/// The [includeContainer] parameter controls whether OverlayContainer is automatically
-/// included in the widget tree. When true (default), overlays render automatically.
-/// When false, you must manually place OverlayContainer somewhere in your tree.
-///
-/// How it works:
-/// 1. OverlayRoot creates OverlayProvider (makes manager available via context)
-/// 2. OverlayContainer looks up the manager via OverlayProvider.of(context)
-/// 3. OverlayContainer renders all active overlays on screen
-///
-/// This follows Flutter's standard pattern: provider creates context, consumer reads it.
-class OverlayRoot extends StatefulWidget {
-  final Widget child;
-  final OverlayManager? manager;
-
-  /// Whether to automatically include OverlayContainer in the widget tree.
-  ///
-  /// When true (default): OverlayContainer is automatically wrapped with your child
-  /// in a Stack, so overlays render immediately without additional setup.
-  ///
-  /// When false: You must manually add OverlayContainer widget somewhere in your tree.
-  /// Useful for advanced layouts where you want precise control over overlay positioning.
-  final bool includeContainer;
-
-  const OverlayRoot({
-    super.key,
-    required this.child,
-    this.manager,
-    this.includeContainer = true,
-  });
-
-  @override
-  State<OverlayRoot> createState() => _OverlayRootState();
-}
-
-class _OverlayRootState extends State<OverlayRoot> {
-  late final OverlayManager _manager;
-  late final bool _ownsManager;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.manager != null) {
-      _manager = widget.manager!;
-      _ownsManager = false;
-    } else {
-      _manager = OverlayManager();
-      _ownsManager = true;
-    }
-  }
-
-  @override
-  void dispose() {
-    if (_ownsManager) {
-      _manager.dispose();
-    }
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    Widget child = widget.child;
-
-    // Automatically include OverlayContainer if requested
-    if (widget.includeContainer) {
-      child = Stack(
-        children: [
-          widget.child,
-          const OverlayContainer(),
-        ],
-      );
-    }
-
-    return OverlayProvider(
-      manager: _manager,
-      child: Overlay(
-        key: _manager.overlayKey,
-        initialEntries: [OverlayEntry(builder: (context) => child)],
-      ),
-    );
-  }
-}
-
-/// Widget that renders all active overlays
-class OverlayContainer extends StatelessWidget {
-  const OverlayContainer({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final manager = OverlayProvider.of(context);
-
-    return ListenableBuilder(
-      listenable: manager,
-      builder: (context, _) {
-        return Stack(
-          children: manager.overlays.map((overlay) {
-            return KeyedSubtree(
-              key: ValueKey(overlay.id),
-              child: _OverlayDataProvider(
-                overlay: overlay,
-                manager: manager,
-                child: Builder(builder: overlay.builder),
-              ),
-            );
-          }).toList(),
-        );
-      },
-    );
   }
 }
 

@@ -2,44 +2,50 @@
 
 ## Project Overview
 
-`overlay_layers` is a Flutter package providing a unified overlay management system for popups, modals, toasts, and dialogs. The core architecture centers around a centralized `OverlayManager` that handles all overlay types with type-safe data passing and lifecycle management.
+`overlay_layers` is a Flutter package providing a unified overlay management system for popups, modals, toasts, and dialogs. Built on Flutter's native Overlay API with type-safe data passing and lifecycle management. **No wrapper widgets required** - works immediately with any Flutter app.
 
 ## Architecture Summary
+
+### Core Architecture (v1.0.0)
+
+The package uses Flutter's native `Overlay` system under the hood:
+
+1. **Controllers** (e.g., PopupController) access `Overlay.of(context)` when opening overlays
+2. **OverlayManager** creates `OverlayEntry` instances and inserts them into Flutter's Overlay
+3. **Each OverlayEntry** wraps the user's widget with `_OverlayDataProvider` for type-safe data access
+4. **Updates** call `entry.markNeedsBuild()` for efficient rendering
+5. **Removal** calls `entry.remove()` to clean up
+
+**Key benefit**: No custom overlay system, no wrapper widgets - pure Flutter integration.
 
 ### Core Components
 
 1. **OverlayManager** ([lib/src/core/overlay_manager.dart](lib/src/core/overlay_manager.dart))
+   - **Singleton pattern** with `OverlayManager.instance` global accessor
    - Central state manager for all overlays
-   - Extends `ChangeNotifier` for reactive updates
-   - Manages overlay lifecycle (create, update, remove)
+   - Creates and manages Flutter `OverlayEntry` instances
+   - Requires `BuildContext` to access `Overlay.of(context)`
    - Handles data merging for type-safe updates
+   - Calls `entry.markNeedsBuild()` on data updates
+   - Optional custom instances via `OverlayManager.custom()` for advanced use
 
-2. **OverlayProvider** ([lib/src/core/overlay_manager.dart:106-130](lib/src/core/overlay_manager.dart#L106-L130))
-   - `InheritedNotifier` widget providing OverlayManager access
-   - Static `of()` and `maybeOf()` methods for context-based access
-   - Throws descriptive error if not found in widget tree
+2. **_OverlayDataProvider** (Internal)
+   - Internal `InheritedWidget` wrapping each overlay's widget
+   - Provides type-safe data context to overlay widgets
+   - Lives inside each `OverlayEntry` builder
 
-3. **OverlayRoot** ([lib/src/core/overlay_manager.dart:147-189](lib/src/core/overlay_manager.dart#L147-L189))
-   - Root widget wrapping the entire app
-   - Creates or accepts external OverlayManager instance
-   - Manages manager lifecycle (creation and disposal)
-   - Wraps app with Flutter's Overlay widget
-   - **NEW in v0.2.0**: `includeContainer` parameter for flexible overlay rendering
-     - When `true` (default): Automatically includes `OverlayContainer` in a Stack
-     - When `false`: Allows manual placement of `OverlayContainer` for advanced layouts
-
-4. **OverlayContainer** ([lib/src/core/overlay_manager.dart:191-207](lib/src/core/overlay_manager.dart#L191-L207))
-   - Renders all active overlays in a Stack
-   - Uses `ListenableBuilder` for reactive updates
-   - Each overlay wrapped in `KeyedSubtree` with unique ID
-   - Provides `_OverlayDataProvider` context to each overlay
-   - **NEW in v0.2.0**: Can be manually placed when `OverlayRoot.includeContainer = false`
-
-5. **OverlayDataContext** ([lib/src/core/overlay_manager.dart:240-302](lib/src/core/overlay_manager.dart#L240-L302))
+3. **OverlayDataContext** ([lib/src/core/overlay_manager.dart](lib/src/core/overlay_manager.dart))
    - Public API for overlay widgets to access their data
    - Provides `data`, `updateData()`, and `close()` methods
    - Type-safe generic implementation
    - Static `of()` and `maybeOf()` accessors
+   - Works through `_OverlayDataProvider`
+
+4. **Controllers** (e.g., PopupController)
+   - Type-specific controllers (PopupController, future: ToastController, etc.)
+   - Store `BuildContext` to access Flutter's Overlay
+   - Provide convenient methods: `open()`, `close()`, `updatePopupData()`
+   - `open()` returns overlay ID for external control
 
 ### Type System
 
@@ -149,30 +155,52 @@ When adding toast, modal, or dialog functionality:
 ### Public API Surface
 
 **Exported from package:**
-- Core: `OverlayManager`, `OverlayProvider`, `OverlayRoot`, `OverlayContainer`, `OverlayDataContext`
+- Core: `OverlayManager` (singleton), `OverlayDataContext`
 - Types: `OverlayInstance`, `OverlayType`, `OverlayCreateOptions`
 - Popup: `PopupController`, `PopupDataContext`, `PopupScaffold`, `AnimatedPopup`, `PositionedPopup`, `PopupPosition`
 
 **Internal (not exported):**
 - `_OverlayDataProvider`: Internal inherited widget for data context
-- `_OverlayRootState`: Private state management
 - Utility functions in `utils.dart`
+
+**Removed in v1.0.0:**
+- `OverlayRoot`: No longer needed - use Flutter's native Overlay
+- `OverlayContainer`: No longer needed - OverlayEntry handles rendering
+- `OverlayProvider`: Replaced with singleton pattern (`OverlayManager.instance`)
 
 ## Version History
 
-### v0.2.0 (Current)
+### v1.0.0 (Current)
 
-Major architectural enhancement for flexible overlay rendering - see [CHANGELOG.md](CHANGELOG.md)
+**BREAKING CHANGES**: Major architectural refactor to use Flutter's native Overlay system - see [CHANGELOG.md](CHANGELOG.md)
 
 **Key Changes:**
+- Removed `OverlayRoot` and `OverlayContainer` - no wrapper widgets required
+- Removed `OverlayProvider` - replaced with singleton pattern
+- `OverlayManager` now uses Flutter's `OverlayEntry` API directly
+- `OverlayManager.instance` provides global singleton access
+- Renamed `updateData()` → `updatePopupData()` in PopupController and PopupDataContext
+- Controllers now require `BuildContext` to access `Overlay.of(context)`
+- Native Flutter integration for better performance and compatibility
 
-- Added `includeContainer` parameter to `OverlayRoot` for flexible overlay rendering
-- Enhanced documentation explaining the provider pattern architecture
-- Improved code formatting and consistency
+**Migration from v0.2.0:**
+```dart
+// Before (v0.2.0)
+OverlayRoot(child: MyApp())
+PopupController.of(context).open(...)
 
-### v0.1.0 (Planned)
+// After (v1.0.0) - No setup needed!
+MaterialApp(home: MyApp())
+PopupController.of(context).open(...)  // Uses singleton automatically
+```
 
-Initial public release on pub.dev with popup support
+### v0.2.0
+
+Flexible overlay rendering with `includeContainer` parameter.
+
+### v0.1.0
+
+Initial release with popup support.
 
 ## Common Tasks
 
@@ -185,56 +213,38 @@ final id = controller.open(
 );
 ```
 
-### Access Data Inside Popup
+### Access and Update Data Inside Popup
 ```dart
 final popup = PopupDataContext.of<Map<String, dynamic>>(context);
-popup.updateData({'key': 'value'});
+popup.updatePopupData({'key': 'value'});  // Note: renamed method
 popup.close();
 ```
 
-### Basic Setup (Automatic Container)
-
+### Update Popup Data from Outside
 ```dart
-// Default behavior - OverlayContainer automatically included
-OverlayRoot(
-  child: MyApp(),
-)
+final controller = PopupController.of(context);
+final id = controller.open(...);
+controller.updatePopupData(id, {'newKey': 'newValue'});  // Note: renamed method
 ```
 
-### Advanced Setup (Manual Container Placement)
+### Basic Setup (No Wrapper Needed!)
 
 ```dart
-// Advanced: Manual control over OverlayContainer placement
-OverlayRoot(
-  includeContainer: false, // Don't auto-include container
-  child: MaterialApp(
-    home: Scaffold(
-      body: Column(
-        children: [
-          Expanded(child: MyContent()),
-          // Overlays render only above MyContent, not the banner
-          Expanded(
-            child: Stack(
-              children: [
-                MyOtherContent(),
-                const OverlayContainer(), // Manual placement
-              ],
-            ),
-          ),
-        ],
-      ),
-    ),
-  ),
-)
+// Just use your app - overlays work automatically with the singleton!
+void main() {
+  runApp(MaterialApp(home: MyHomePage()));
+}
 ```
 
-### Custom Overlay Manager
+### Advanced: Custom OverlayManager
+
 ```dart
-final customManager = OverlayManager();
-OverlayRoot(
-  manager: customManager,
-  child: MyApp(),
-)
+// Only if you need a custom manager (very rare)
+final customManager = OverlayManager.custom();
+PopupController.withManager(context, customManager).open(...);
+
+// Access global singleton
+final overlays = OverlayManager.instance.overlays;
 ```
 
 ## Notes for AI Assistants
@@ -242,7 +252,11 @@ OverlayRoot(
 - Always preserve the centralized architecture - don't create separate overlay systems
 - Maintain type safety with generics throughout
 - Follow the established patterns when adding new overlay types
-- Keep formatting consistent with v0.2.0 standards
 - Export new features explicitly in [lib/overlay_layers.dart](lib/overlay_layers.dart)
 - Add lifecycle callbacks (onDataChange, onClose) for all overlay types
-- Use `ChangeNotifier` pattern for reactive updates
+- **v1.0.0+**: All overlays use Flutter's native `OverlayEntry` system
+- **v1.0.0+**: `OverlayManager.instance` singleton is the default, no OverlayProvider needed
+- **v1.0.0+**: Controllers must store `BuildContext` to access `Overlay.of(context)`
+- **v1.0.0+**: Data update methods renamed to be more specific (e.g., `updatePopupData`)
+- **v1.0.0+**: No wrapper widgets required - works with any Flutter app immediately
+- **v1.0.0+**: Custom managers available via `OverlayManager.custom()` for advanced use

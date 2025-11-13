@@ -1,3 +1,76 @@
+## 1.0.0
+
+### BREAKING CHANGES
+
+This is a major architectural refactor that uses Flutter's native Overlay system. The package now works immediately without any wrapper widgets.
+
+#### Removed Components
+- **`OverlayRoot`**: No longer needed. Remove all `OverlayRoot` wrappers from your app.
+- **`OverlayContainer`**: No longer needed. Overlays render through Flutter's native Overlay.
+- **`OverlayProvider`**: Removed entirely. Replaced with singleton pattern.
+
+#### API Changes
+- **`PopupController.updateData()` → `PopupController.updatePopupData()`**: Method renamed for clarity
+- **`PopupDataContext.updateData()` → `PopupDataContext.updatePopupData()`**: Method renamed for clarity
+- **`OverlayManager.createOverlay()`**: Now requires `BuildContext` parameter
+- **`OverlayManager`**: Now uses singleton pattern with `OverlayManager.instance`
+- **`PopupController.of()`**: Now uses singleton automatically, no provider needed
+- **`OverlayManager.custom()`**: New constructor for custom manager instances (advanced use)
+
+#### Migration Guide
+
+**Before (v0.2.0):**
+```dart
+// App setup
+OverlayRoot(
+  child: MaterialApp(home: MyApp()),
+)
+
+// Update popup data
+controller.updateData(id, data);
+popup.updateData(data);
+```
+
+**After (v1.0.0):**
+```dart
+// App setup - No wrapper needed! Uses singleton automatically
+MaterialApp(home: MyApp())
+
+// Update popup data - Renamed methods
+controller.updatePopupData(id, data);
+popup.updatePopupData(data);
+
+// Access global singleton (advanced)
+final overlays = OverlayManager.instance.overlays;
+
+// Or create custom manager (rare)
+final customManager = OverlayManager.custom();
+PopupController.withManager(context, customManager).open(...);
+```
+
+### Features
+
+* **Native Flutter Overlay integration**: Built on `OverlayEntry` API for better performance
+* **No setup required**: Works immediately with any Flutter app (MaterialApp, CupertinoApp, etc.)
+* **Singleton pattern**: Global `OverlayManager.instance` provides automatic access everywhere
+* **Simplified architecture**: Removed custom overlay system and provider pattern, uses Flutter's standard approach
+* **Better performance**: Individual entry updates via `markNeedsBuild()` instead of full Stack rebuilds
+
+### Implementation Details
+
+* **OverlayManager** now creates and manages Flutter `OverlayEntry` instances
+* Uses `Overlay.of(context, rootOverlay: true)` for predictable overlay placement
+* Entries removed via `entry.remove()` with proper lifecycle management
+* Data updates trigger `entry.markNeedsBuild()` for efficient rendering
+* Controllers store `BuildContext` to access native Overlay
+
+### Documentation
+
+* Updated README.md with new Quick Start guide
+* Updated CLAUDE.md with v1.0.0 architecture details
+* Added migration guide for v0.2.0 users
+* Updated API reference with renamed methods
+
 ## 0.2.0
 
 ### Features

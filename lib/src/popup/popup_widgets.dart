@@ -25,18 +25,13 @@ class PopupScaffold extends StatelessWidget {
         Positioned.fill(
           child: GestureDetector(
             onTap: onBackdropTap,
-            child: Container(
-              color: backdropColor,
-            ),
+            child: Container(color: backdropColor),
           ),
         ),
         // Content
         Align(
           alignment: alignment,
-          child: Padding(
-            padding: padding ?? EdgeInsets.zero,
-            child: child,
-          ),
+          child: Padding(padding: padding ?? EdgeInsets.zero, child: child),
         ),
       ],
     );
@@ -69,26 +64,17 @@ class _AnimatedPopupState extends State<AnimatedPopup>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: widget.duration,
-      vsync: this,
-    );
+    _controller = AnimationController(duration: widget.duration, vsync: this);
 
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: widget.curve,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: widget.curve));
 
     _scaleAnimation = Tween<double>(
       begin: 0.9,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: widget.curve,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: widget.curve));
 
     _controller.forward();
   }
@@ -103,10 +89,7 @@ class _AnimatedPopupState extends State<AnimatedPopup>
   Widget build(BuildContext context) {
     return FadeTransition(
       opacity: _fadeAnimation,
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        child: widget.child,
-      ),
+      child: ScaleTransition(scale: _scaleAnimation, child: widget.child),
     );
   }
 }
@@ -169,10 +152,12 @@ class _PopupPositionDelegate extends SingleChildLayoutDelegate {
   @override
   BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
     final margins = margin.resolve(TextDirection.ltr);
-    return BoxConstraints.loose(Size(
-      constraints.maxWidth - margins.horizontal,
-      constraints.maxHeight - margins.vertical,
-    ));
+    return BoxConstraints.loose(
+      Size(
+        constraints.maxWidth - margins.horizontal,
+        constraints.maxHeight - margins.vertical,
+      ),
+    );
   }
 
   @override
@@ -220,8 +205,14 @@ class _PopupPositionDelegate extends SingleChildLayoutDelegate {
     }
 
     // Constrain within available space
-    left = left.clamp(margins.left, margins.left + availableWidth - childSize.width);
-    top = top.clamp(margins.top, margins.top + availableHeight - childSize.height);
+    left = left.clamp(
+      margins.left,
+      margins.left + availableWidth - childSize.width,
+    );
+    top = top.clamp(
+      margins.top,
+      margins.top + availableHeight - childSize.height,
+    );
 
     return Offset(left, top);
   }

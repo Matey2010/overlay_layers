@@ -1,6 +1,6 @@
 name: overlay_layers
-description: "A flexible overlay system for Flutter with support for popups, modals, toasts, and dialogs"
-version: 0.2.0
+description: "A flexible overlay system for Flutter with native Overlay integration. Supports popups, modals, toasts, and dialogs with type-safe data passing."
+version: 1.0.0
 repository: https://github.com/Matey2010/overlay_layers
 
 environment:
