@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 
 /// Base popup scaffold with backdrop and positioning
 class PopupScaffold extends StatelessWidget {
@@ -28,10 +28,13 @@ class PopupScaffold extends StatelessWidget {
             child: Container(color: backdropColor),
           ),
         ),
-        // Content
+        // Content with Material wrapper to prevent yellow underlines
         Align(
           alignment: alignment,
-          child: Padding(padding: padding ?? EdgeInsets.zero, child: child),
+          child: Padding(
+            padding: padding ?? EdgeInsets.zero,
+            child: Material(type: MaterialType.transparency, child: child),
+          ),
         ),
       ],
     );

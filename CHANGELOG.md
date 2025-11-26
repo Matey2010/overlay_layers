@@ -53,6 +53,8 @@ PopupController.withManager(context, customManager).open(...);
 * **Native Flutter Overlay integration**: Built on `OverlayEntry` API for better performance
 * **No setup required**: Works immediately with any Flutter app (MaterialApp, CupertinoApp, etc.)
 * **Singleton pattern**: Global `OverlayManager.instance` provides automatic access everywhere
+* **Modal support**: Interchangeable modals - only one modal at a time, opening new modal closes previous
+* **Popup support**: Multiple popups can coexist simultaneously
 * **Simplified architecture**: Removed custom overlay system and provider pattern, uses Flutter's standard approach
 * **Better performance**: Individual entry updates via `markNeedsBuild()` instead of full Stack rebuilds
 

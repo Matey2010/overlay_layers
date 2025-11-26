@@ -117,6 +117,76 @@ class MyPopupWidget extends StatelessWidget {
 }
 ```
 
+### 2. Work with modals
+
+Modals are similar to popups but with one key difference: **only one modal can be displayed at a time**. Opening a new modal automatically closes the previous one (interchangeable behavior).
+
+```dart
+import 'package:overlay_layers/overlay_layers.dart';
+
+class MyWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final modalController = ModalController.of(context);
+
+    return ElevatedButton(
+      onPressed: () {
+        // Opening this modal closes any existing modal
+        modalController.open(
+          builder: (context) => MyModalWidget(),
+          options: OverlayCreateOptions(
+            initialData: {'title': 'Welcome'},
+            onClose: (data) => print('Modal closed'),
+          ),
+        );
+      },
+      child: Text('Open Modal'),
+    );
+  }
+}
+```
+
+### 3. Access modal data from within
+
+```dart
+class MyModalWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final modal = ModalDataContext.of<Map<String, dynamic>>(context);
+
+    return ModalScaffold(
+      onBackdropTap: () => modal.close(),
+      child: AnimatedModal(
+        child: Container(
+          padding: EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(modal.data['title']),
+              SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  modal.updateModalData({'title': 'Updated!'});
+                },
+                child: Text('Update'),
+              ),
+              ElevatedButton(
+                onPressed: () => modal.close(),
+                child: Text('Close'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+```
+
 ## API Reference
 
 ### PopupController
@@ -170,6 +240,53 @@ popup.close();
 
 // Close with final data
 popup.close({'finalKey': 'finalValue'});
+```
+
+### ModalController
+
+Controller for managing modals. **Interchangeable behavior**: Only one modal can be displayed at a time.
+
+```dart
+final controller = ModalController.of(context);
+
+// Open a modal (closes any existing modal automatically)
+controller.open(
+  builder: (context) => MyModalWidget(),
+  options: OverlayCreateOptions(
+    initialData: {},
+    onDataChange: (data) => print(data),
+    onClose: (data) => print('Closed'),
+  ),
+);
+
+// Close current modal
+controller.close();
+
+// Update current modal data
+controller.updateModalData({'key': 'value'});
+
+// Get current modal (if any)
+final currentModal = controller.modal;
+```
+
+### ModalDataContext
+
+Access and update modal data from within a modal widget.
+
+```dart
+final modal = ModalDataContext.of<MyDataType>(context);
+
+// Access data
+final data = modal.data;
+
+// Update data (merges with existing)
+modal.updateModalData({'key': 'value'});
+
+// Close modal
+modal.close();
+
+// Close with final data
+modal.close({'finalKey': 'finalValue'});
 ```
 
 ### OverlayManager
@@ -228,15 +345,56 @@ PositionedPopup(
 )
 ```
 
-## Future Features
+#### ModalScaffold
 
-The package is designed to support additional overlay types:
+Base modal layout with backdrop and positioning.
+
+```dart
+ModalScaffold(
+  backdropColor: Colors.black.withOpacity(0.5),
+  onBackdropTap: () => modal.close(),
+  alignment: Alignment.center,
+  child: MyContent(),
+)
+```
+
+#### AnimatedModal
+
+Animated wrapper with fade and scale animation.
+
+```dart
+AnimatedModal(
+  duration: Duration(milliseconds: 300),
+  curve: Curves.easeOut,
+  child: MyContent(),
+)
+```
+
+#### SlideUpModal
+
+Modal that slides up from the bottom (like bottom sheet).
+
+```dart
+SlideUpModal(
+  duration: Duration(milliseconds: 300),
+  curve: Curves.easeOut,
+  child: MyContent(),
+)
+```
+
+## Overlay Types
+
+The package currently supports:
+
+- **Popups**: Multiple popups can be displayed simultaneously
+- **Modals**: Interchangeable - only one modal at a time (opening a new modal closes the previous)
+
+### Future Features
+
+Additional overlay types planned:
 
 - **Toast**: Temporary notifications
-- **Modal**: Full-screen overlays
 - **Dialog**: Alert-style overlays
-
-These will be added in future versions following the same architectural pattern.
 
 ## Architecture
 

@@ -42,12 +42,16 @@ class OverlayManager {
     );
 
     // Create OverlayEntry that wraps the overlay with data provider
+    // The builder must look up current overlay from list on each rebuild
     final entry = OverlayEntry(
-      builder: (context) => _OverlayDataProvider(
-        overlay: overlay,
-        manager: this,
-        child: Builder(builder: builder),
-      ),
+      builder: (context) {
+        final currentOverlay = _overlays.firstWhere((o) => o.id == id);
+        return _OverlayDataProvider(
+          overlay: currentOverlay as OverlayInstance<TData>,
+          manager: this,
+          child: Builder(builder: builder),
+        );
+      },
     );
 
     _overlays.add(overlay);
@@ -126,7 +130,19 @@ class OverlayManager {
   TData _mergeData<TData>(TData existing, TData partial) {
     // If data is a Map, merge it
     if (existing is Map && partial is Map) {
-      return {...existing, ...partial} as TData;
+      // Handle Map<String, dynamic> specifically to avoid cast errors
+      if (existing is Map<String, dynamic> && partial is Map<String, dynamic>) {
+        final Map<String, dynamic> merged = <String, dynamic>{}
+          ..addAll(existing)
+          ..addAll(partial);
+        return merged as TData;
+      } else {
+        // Fallback for other Map types
+        final Map<dynamic, dynamic> merged = <dynamic, dynamic>{}
+          ..addAll(existing)
+          ..addAll(partial);
+        return merged as TData;
+      }
     }
     // Otherwise, replace it
     return partial;
