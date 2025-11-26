@@ -1,3 +1,106 @@
+## 3.0.0
+
+### BREAKING CHANGES
+
+This release removes type-specific widget duplication and introduces a unified, highly configurable widget system.
+
+#### Removed Widgets
+
+All type-specific widgets have been removed to eliminate duplication:
+
+* **`PopupScaffold`** → use `OverlayScaffold`
+* **`ModalScaffold`** → use `OverlayScaffold`
+* **`AnimatedPopup`** → use `AnimatedOverlay`
+* **`AnimatedModal`** → use `AnimatedOverlay`
+* **`SlideUpModal`** → use `AnimatedOverlay(slideFrom: Offset(0, 1))`
+* **`PositionedPopup`** → use `PositionedOverlay`
+* **`PopupPosition`** (enum) → use `OverlayPosition`
+
+#### New Generic Widgets
+
+**OverlayScaffold**: Unified scaffold for all overlay types
+- Replaces both PopupScaffold and ModalScaffold (they were identical)
+- Works with popups, modals, toasts, dialogs, tooltips
+- Same API: `backdropColor`, `onBackdropTap`, `alignment`, `padding`
+
+**AnimatedOverlay**: Flexible animation system
+- Configure any combination of fade, scale, and slide animations
+- `fade: bool` - Enable fade animation (default: true)
+- `scale: bool` - Enable scale animation (default: true)
+- `slideFrom: Offset?` - Slide direction (null = no slide)
+  - `Offset(0, 1)` = slide from bottom
+  - `Offset(0, -1)` = slide from top
+  - `Offset(-1, 0)` = slide from left
+  - `Offset(1, 0)` = slide from right
+- `scaleBegin`, `scaleEnd` - Customize scale range
+- `duration`, `curve` - Control timing
+
+**PositionedOverlay**: Generic positioned overlay
+- Renamed from PositionedPopup for consistency
+- Position any overlay relative to a target widget
+- Perfect for tooltips, dropdowns, context menus
+- Enum renamed: `PopupPosition` → `OverlayPosition`
+
+### Features
+
+* **Tree-shakable exports**: Widgets exported separately so unused widgets don't bloat your bundle
+* **Maximum flexibility**: AnimatedOverlay supports any animation combination
+* **Zero duplication**: Single implementation for all overlay types
+* **Future-ready**: Prepared for upcoming TooltipOverlay feature
+
+### Migration from v2.0.0
+
+```dart
+// Before (v2.0.0)
+PopupScaffold(
+  child: AnimatedPopup(child: MyContent()),
+)
+
+// After (v3.0.0)
+OverlayScaffold(
+  child: AnimatedOverlay(child: MyContent()),
+)
+
+// Before: SlideUpModal
+SlideUpModal(child: MyContent())
+
+// After: AnimatedOverlay with slideFrom
+AnimatedOverlay(
+  slideFrom: Offset(0, 1),
+  child: MyContent(),
+)
+
+// Before: PositionedPopup
+PositionedPopup(
+  targetRect: rect,
+  position: PopupPosition.bottom,
+  child: MyContent(),
+)
+
+// After: PositionedOverlay
+PositionedOverlay(
+  targetRect: rect,
+  position: OverlayPosition.bottom,
+  child: MyContent(),
+)
+
+// Custom animations (new capability!)
+AnimatedOverlay(
+  fade: true,
+  scale: false,
+  slideFrom: Offset(-1, 0),  // Slide from left
+  duration: Duration(milliseconds: 150),
+  child: MyContent(),
+)
+```
+
+### Benefits
+
+* **Smaller bundle size**: Tree-shaking removes unused widgets
+* **Simpler API**: One scaffold, one animation widget
+* **More flexible**: Mix any animations (fade + slide, scale + slide, etc.)
+* **Consistent**: Same widgets work for all overlay types
+
 ## 2.0.0
 
 ### Features

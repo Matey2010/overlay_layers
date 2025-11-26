@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 
-/// Base popup scaffold with backdrop and positioning
-class PopupScaffold extends StatelessWidget {
+/// Generic overlay scaffold with backdrop and positioning
+/// Works with any overlay type (popup, modal, toast, dialog, tooltip)
+class OverlayScaffold extends StatelessWidget {
   final Widget child;
   final Color backdropColor;
   final VoidCallback? onBackdropTap;
   final AlignmentGeometry alignment;
   final EdgeInsetsGeometry? padding;
 
-  const PopupScaffold({
+  const OverlayScaffold({
     super.key,
     required this.child,
     this.backdropColor = const Color(0x80000000),
@@ -41,43 +42,80 @@ class PopupScaffold extends StatelessWidget {
   }
 }
 
-/// Animated popup wrapper with fade and scale animation
-class AnimatedPopup extends StatefulWidget {
+/// Generic animated overlay wrapper with configurable animations
+/// Supports fade, scale, and slide animations in any combination
+class AnimatedOverlay extends StatefulWidget {
   final Widget child;
   final Duration duration;
   final Curve curve;
 
-  const AnimatedPopup({
+  /// Enable fade animation (default: true)
+  final bool fade;
+
+  /// Enable scale animation (default: true)
+  final bool scale;
+
+  /// Slide from offset (null = no slide)
+  /// Examples:
+  /// - Offset(0, 1) = slide from bottom
+  /// - Offset(0, -1) = slide from top
+  /// - Offset(-1, 0) = slide from left
+  /// - Offset(1, 0) = slide from right
+  final Offset? slideFrom;
+
+  /// Scale animation start value (default: 0.95)
+  final double scaleBegin;
+
+  /// Scale animation end value (default: 1.0)
+  final double scaleEnd;
+
+  const AnimatedOverlay({
     super.key,
     required this.child,
-    this.duration = const Duration(milliseconds: 200),
+    this.duration = const Duration(milliseconds: 250),
     this.curve = Curves.easeOut,
+    this.fade = true,
+    this.scale = true,
+    this.slideFrom,
+    this.scaleBegin = 0.95,
+    this.scaleEnd = 1.0,
   });
 
   @override
-  State<AnimatedPopup> createState() => _AnimatedPopupState();
+  State<AnimatedOverlay> createState() => _AnimatedOverlayState();
 }
 
-class _AnimatedPopupState extends State<AnimatedPopup>
+class _AnimatedOverlayState extends State<AnimatedOverlay>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _fadeAnimation;
   late final Animation<double> _scaleAnimation;
+  late final Animation<Offset>? _slideAnimation;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(duration: widget.duration, vsync: this);
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: widget.curve));
+    final curvedAnimation =
+        CurvedAnimation(parent: _controller, curve: widget.curve);
 
-    _scaleAnimation = Tween<double>(
-      begin: 0.9,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: widget.curve));
+    // Fade animation
+    _fadeAnimation = widget.fade
+        ? Tween<double>(begin: 0.0, end: 1.0).animate(curvedAnimation)
+        : AlwaysStoppedAnimation(1.0);
+
+    // Scale animation
+    _scaleAnimation = widget.scale
+        ? Tween<double>(begin: widget.scaleBegin, end: widget.scaleEnd)
+            .animate(curvedAnimation)
+        : AlwaysStoppedAnimation(1.0);
+
+    // Slide animation
+    _slideAnimation = widget.slideFrom != null
+        ? Tween<Offset>(begin: widget.slideFrom!, end: Offset.zero)
+            .animate(curvedAnimation)
+        : null;
 
     _controller.forward();
   }
@@ -90,26 +128,41 @@ class _AnimatedPopupState extends State<AnimatedPopup>
 
   @override
   Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: ScaleTransition(scale: _scaleAnimation, child: widget.child),
-    );
+    Widget result = widget.child;
+
+    // Apply scale if enabled
+    if (widget.scale) {
+      result = ScaleTransition(scale: _scaleAnimation, child: result);
+    }
+
+    // Apply slide if configured
+    if (_slideAnimation != null) {
+      result = SlideTransition(position: _slideAnimation, child: result);
+    }
+
+    // Apply fade if enabled
+    if (widget.fade) {
+      result = FadeTransition(opacity: _fadeAnimation, child: result);
+    }
+
+    return result;
   }
 }
 
-/// Popup positioned at a specific location relative to a target widget
-class PositionedPopup extends StatelessWidget {
+/// Position an overlay relative to a target widget
+/// Useful for tooltips, dropdowns, and context menus
+class PositionedOverlay extends StatelessWidget {
   final Widget child;
   final Rect targetRect;
-  final PopupPosition position;
+  final OverlayPosition position;
   final double spacing;
   final EdgeInsetsGeometry margin;
 
-  const PositionedPopup({
+  const PositionedOverlay({
     super.key,
     required this.child,
     required this.targetRect,
-    this.position = PopupPosition.bottom,
+    this.position = OverlayPosition.bottom,
     this.spacing = 8.0,
     this.margin = const EdgeInsets.all(16.0),
   });
@@ -117,7 +170,7 @@ class PositionedPopup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomSingleChildLayout(
-      delegate: _PopupPositionDelegate(
+      delegate: _PositionedOverlayDelegate(
         targetRect: targetRect,
         position: position,
         spacing: spacing,
@@ -128,7 +181,8 @@ class PositionedPopup extends StatelessWidget {
   }
 }
 
-enum PopupPosition {
+/// Position for PositionedOverlay
+enum OverlayPosition {
   top,
   bottom,
   left,
@@ -139,13 +193,13 @@ enum PopupPosition {
   bottomRight,
 }
 
-class _PopupPositionDelegate extends SingleChildLayoutDelegate {
+class _PositionedOverlayDelegate extends SingleChildLayoutDelegate {
   final Rect targetRect;
-  final PopupPosition position;
+  final OverlayPosition position;
   final double spacing;
   final EdgeInsetsGeometry margin;
 
-  _PopupPositionDelegate({
+  _PositionedOverlayDelegate({
     required this.targetRect,
     required this.position,
     required this.spacing,
@@ -173,35 +227,35 @@ class _PopupPositionDelegate extends SingleChildLayoutDelegate {
     double top = 0;
 
     switch (position) {
-      case PopupPosition.top:
+      case OverlayPosition.top:
         left = targetRect.center.dx - childSize.width / 2;
         top = targetRect.top - childSize.height - spacing;
         break;
-      case PopupPosition.bottom:
+      case OverlayPosition.bottom:
         left = targetRect.center.dx - childSize.width / 2;
         top = targetRect.bottom + spacing;
         break;
-      case PopupPosition.left:
+      case OverlayPosition.left:
         left = targetRect.left - childSize.width - spacing;
         top = targetRect.center.dy - childSize.height / 2;
         break;
-      case PopupPosition.right:
+      case OverlayPosition.right:
         left = targetRect.right + spacing;
         top = targetRect.center.dy - childSize.height / 2;
         break;
-      case PopupPosition.topLeft:
+      case OverlayPosition.topLeft:
         left = targetRect.left;
         top = targetRect.top - childSize.height - spacing;
         break;
-      case PopupPosition.topRight:
+      case OverlayPosition.topRight:
         left = targetRect.right - childSize.width;
         top = targetRect.top - childSize.height - spacing;
         break;
-      case PopupPosition.bottomLeft:
+      case OverlayPosition.bottomLeft:
         left = targetRect.left;
         top = targetRect.bottom + spacing;
         break;
-      case PopupPosition.bottomRight:
+      case OverlayPosition.bottomRight:
         left = targetRect.right - childSize.width;
         top = targetRect.bottom + spacing;
         break;
@@ -221,7 +275,7 @@ class _PopupPositionDelegate extends SingleChildLayoutDelegate {
   }
 
   @override
-  bool shouldRelayout(_PopupPositionDelegate oldDelegate) {
+  bool shouldRelayout(_PositionedOverlayDelegate oldDelegate) {
     return targetRect != oldDelegate.targetRect ||
         position != oldDelegate.position ||
         spacing != oldDelegate.spacing ||

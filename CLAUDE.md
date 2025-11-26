@@ -60,12 +60,14 @@ The package uses Flutter's native `Overlay` system under the hood:
 - Core overlay management system
 - Popup functionality with controller
 - Modal functionality with controller (v2.0.0+)
+- Generic overlay widgets (v3.0.0+): OverlayScaffold, AnimatedOverlay, PositionedOverlay
 - Type-safe data passing with generics
 - Lifecycle callbacks (onDataChange, onClose)
-- Helper widgets for popups and modals
+- Tree-shakable widget exports
 
 **Planned (Future):**
 - Toast controller and widgets
+- Tooltip controller and widgets (will use PositionedOverlay)
 - Dialog controller and widgets
 
 ## Code Style and Formatting (v0.0.2 Changes)
@@ -158,8 +160,9 @@ When adding toast, modal, or dialog functionality:
 **Exported from package:**
 - Core: `OverlayManager` (singleton), `OverlayDataContext`
 - Types: `OverlayInstance`, `OverlayType`, `OverlayCreateOptions`
-- Popup: `PopupController`, `PopupDataContext`, `PopupScaffold`, `AnimatedPopup`, `PositionedPopup`, `PopupPosition`
-- Modal (v2.0.0+): `ModalController`, `ModalDataContext`, `ModalScaffold`, `AnimatedModal`, `SlideUpModal`
+- Widgets (v3.0.0+, tree-shakable): `OverlayScaffold`, `AnimatedOverlay`, `PositionedOverlay`, `OverlayPosition`
+- Popup: `PopupController`, `PopupDataContext`
+- Modal (v2.0.0+): `ModalController`, `ModalDataContext`
 
 **Internal (not exported):**
 - `_OverlayDataProvider`: Internal inherited widget for data context
@@ -170,9 +173,37 @@ When adding toast, modal, or dialog functionality:
 - `OverlayContainer`: No longer needed - OverlayEntry handles rendering
 - `OverlayProvider`: Replaced with singleton pattern (`OverlayManager.instance`)
 
+**Removed in v3.0.0:**
+- `PopupScaffold`, `ModalScaffold` → use `OverlayScaffold`
+- `AnimatedPopup`, `AnimatedModal`, `SlideUpModal` → use `AnimatedOverlay`
+- `PositionedPopup` → use `PositionedOverlay`
+- `PopupPosition` → use `OverlayPosition`
+
 ## Version History
 
-### v2.0.0 (Current)
+### v3.0.0 (Current)
+
+**BREAKING CHANGES**: Unified generic widget system - see [CHANGELOG.md](CHANGELOG.md)
+
+**Key Changes:**
+- **Removed all type-specific widget duplication**
+- **New generic widgets**: `OverlayScaffold`, `AnimatedOverlay`, `PositionedOverlay`
+- **Tree-shakable exports**: Widgets exported separately for minimal bundle size
+- **Maximum flexibility**: AnimatedOverlay supports any combination of fade, scale, and slide animations
+- **Future-ready**: PositionedOverlay prepared for upcoming TooltipOverlay feature
+
+**Migration:**
+```dart
+// v2.0.0 → v3.0.0
+PopupScaffold(...)      → OverlayScaffold(...)
+ModalScaffold(...)      → OverlayScaffold(...)
+AnimatedPopup(...)      → AnimatedOverlay(...)
+AnimatedModal(...)      → AnimatedOverlay(...)
+SlideUpModal(...)       → AnimatedOverlay(slideFrom: Offset(0, 1), ...)
+PositionedPopup(...)    → PositionedOverlay(...)
+```
+
+### v2.0.0
 
 **Major Feature**: Modal support with interchangeable behavior - see [CHANGELOG.md](CHANGELOG.md)
 
@@ -180,12 +211,11 @@ When adding toast, modal, or dialog functionality:
 - **🎉 Modal Support**: New `ModalController` and `ModalDataContext` for managing modals
   - Interchangeable behavior: only one modal at a time
   - Full API parity with popups
-  - Modal widgets: `ModalScaffold`, `AnimatedModal`, `SlideUpModal`
 - **Bug fixes**: Fixed data update functionality and type cast errors from v1.0.0
 - No breaking changes from v1.0.0
 
-**Technical Details:**
-Modals use the same `OverlayManager` infrastructure as popups but with interchangeable behavior - opening a new modal automatically closes the previous one. Bug fixes ensure data updates trigger UI rebuilds correctly by having the OverlayEntry builder look up fresh overlay data on each rebuild.
+**Known Issues (Fixed in v3.0.0):**
+- Widget duplication between popup and modal types
 
 ### v1.0.0
 
@@ -283,3 +313,6 @@ final overlays = OverlayManager.instance.overlays;
 - **v1.0.0+**: No wrapper widgets required - works with any Flutter app immediately
 - **v1.0.0+**: Custom managers available via `OverlayManager.custom()` for advanced use
 - **v2.0.0+**: Modal support with interchangeable behavior (only one modal at a time)
+- **v3.0.0+**: Generic widgets only - use `OverlayScaffold`, `AnimatedOverlay`, `PositionedOverlay` for all overlay types
+- **v3.0.0+**: Tree-shakable widget exports - unused widgets don't bloat bundle
+- **v3.0.0+**: PositionedOverlay prepared for future TooltipOverlay feature

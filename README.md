@@ -21,7 +21,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  overlay_layers: ^2.0.0
+  overlay_layers: ^3.0.0
 ```
 
 ## Quick Start
@@ -84,9 +84,9 @@ class MyPopupWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final popup = PopupDataContext.of<Map<String, dynamic>>(context);
 
-    return PopupScaffold(
+    return OverlayScaffold(
       onBackdropTap: () => popup.close(),
-      child: AnimatedPopup(
+      child: AnimatedOverlay(
         child: Container(
           padding: EdgeInsets.all(24),
           decoration: BoxDecoration(
@@ -154,9 +154,9 @@ class MyModalWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final modal = ModalDataContext.of<Map<String, dynamic>>(context);
 
-    return ModalScaffold(
+    return OverlayScaffold(
       onBackdropTap: () => modal.close(),
-      child: AnimatedModal(
+      child: AnimatedOverlay(
         child: Container(
           padding: EdgeInsets.all(32),
           decoration: BoxDecoration(
@@ -307,77 +307,61 @@ PopupController.withManager(context, customManager).open(...);
 
 ### Helper Widgets
 
-#### PopupScaffold
+#### OverlayScaffold
 
-Base popup layout with backdrop and positioning.
+Generic overlay scaffold with backdrop and positioning. Works with all overlay types.
 
 ```dart
-PopupScaffold(
+OverlayScaffold(
   backdropColor: Colors.black.withOpacity(0.5),
-  onBackdropTap: () => popup.close(),
+  onBackdropTap: () => context.close(),
   alignment: Alignment.center,
   child: MyContent(),
 )
 ```
 
-#### AnimatedPopup
+#### AnimatedOverlay
 
-Animated wrapper with fade and scale animation.
+Flexible animated wrapper with configurable fade, scale, and slide animations.
 
 ```dart
-AnimatedPopup(
-  duration: Duration(milliseconds: 200),
+// Default: fade + scale
+AnimatedOverlay(
+  duration: Duration(milliseconds: 250),
   curve: Curves.easeOut,
+  child: MyContent(),
+)
+
+// Slide from bottom (like bottom sheet)
+AnimatedOverlay(
+  slideFrom: Offset(0, 1),
+  child: MyContent(),
+)
+
+// Slide from left with fade, no scale
+AnimatedOverlay(
+  slideFrom: Offset(-1, 0),
+  scale: false,
+  child: MyContent(),
+)
+
+// Custom scale range
+AnimatedOverlay(
+  scaleBegin: 0.8,
+  scaleEnd: 1.0,
   child: MyContent(),
 )
 ```
 
-#### PositionedPopup
+#### PositionedOverlay
 
-Position popup relative to a target widget.
+Position overlay relative to a target widget. Perfect for tooltips, dropdowns, and context menus.
 
 ```dart
-PositionedPopup(
+PositionedOverlay(
   targetRect: targetRect,
-  position: PopupPosition.bottom,
+  position: OverlayPosition.bottom,
   spacing: 8.0,
-  child: MyContent(),
-)
-```
-
-#### ModalScaffold
-
-Base modal layout with backdrop and positioning.
-
-```dart
-ModalScaffold(
-  backdropColor: Colors.black.withOpacity(0.5),
-  onBackdropTap: () => modal.close(),
-  alignment: Alignment.center,
-  child: MyContent(),
-)
-```
-
-#### AnimatedModal
-
-Animated wrapper with fade and scale animation.
-
-```dart
-AnimatedModal(
-  duration: Duration(milliseconds: 300),
-  curve: Curves.easeOut,
-  child: MyContent(),
-)
-```
-
-#### SlideUpModal
-
-Modal that slides up from the bottom (like bottom sheet).
-
-```dart
-SlideUpModal(
-  duration: Duration(milliseconds: 300),
-  curve: Curves.easeOut,
   child: MyContent(),
 )
 ```
@@ -393,6 +377,7 @@ The package currently supports:
 
 Additional overlay types planned:
 
+- **Tooltip**: Positioned tooltips using `PositionedOverlay`
 - **Toast**: Temporary notifications
 - **Dialog**: Alert-style overlays
 
@@ -413,6 +398,7 @@ The package is built on Flutter's native Overlay system with a centralized `Over
 - Proper z-index management
 - Type-safe data passing with generics
 - Unified lifecycle management
+- Tree-shakable widgets (v3.0.0+): unused widgets don't bloat your bundle
 
 ## License
 

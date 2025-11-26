@@ -113,9 +113,9 @@ class ExamplesPage extends StatelessWidget {
   // Example 1: Simple Popup
   void _showExample1(BuildContext context) {
     PopupController.of(context).open(
-      builder: (context) => PopupScaffold(
+      builder: (context) => OverlayScaffold(
         onBackdropTap: () => PopupDataContext.of(context).close(),
-        child: AnimatedPopup(
+        child: AnimatedOverlay(
           child: Container(
             width: 300,
             padding: const EdgeInsets.all(24),
@@ -152,9 +152,9 @@ class ExamplesPage extends StatelessWidget {
     PopupController.of(context).open<Map<String, dynamic>>(
       builder: (context) {
         final popup = PopupDataContext.of<Map<String, dynamic>>(context);
-        return PopupScaffold(
+        return OverlayScaffold(
           onBackdropTap: () => popup.close(),
-          child: AnimatedPopup(
+          child: AnimatedOverlay(
             child: Container(
               width: 300,
               padding: const EdgeInsets.all(24),
@@ -208,11 +208,11 @@ class ExamplesPage extends StatelessWidget {
 
     // Open first popup
     controller.open(
-      builder: (context) => PopupScaffold(
+      builder: (context) => OverlayScaffold(
         alignment: Alignment.topCenter,
         padding: const EdgeInsets.only(top: 100),
         onBackdropTap: () => PopupDataContext.of(context).close(),
-        child: AnimatedPopup(
+        child: AnimatedOverlay(
           child: Container(
             width: 250,
             padding: const EdgeInsets.all(20),
@@ -242,11 +242,11 @@ class ExamplesPage extends StatelessWidget {
     // Open second popup
     Future.delayed(const Duration(milliseconds: 200), () {
       controller.open(
-        builder: (context) => PopupScaffold(
+        builder: (context) => OverlayScaffold(
           alignment: Alignment.bottomCenter,
           padding: const EdgeInsets.only(bottom: 100),
           onBackdropTap: () => PopupDataContext.of(context).close(),
-          child: AnimatedPopup(
+          child: AnimatedOverlay(
             child: Container(
               width: 250,
               padding: const EdgeInsets.all(20),
@@ -280,9 +280,9 @@ class ExamplesPage extends StatelessWidget {
   // Example 4: Simple Modal
   void _showExample4(BuildContext context) {
     ModalController.of(context).open(
-      builder: (context) => ModalScaffold(
+      builder: (context) => OverlayScaffold(
         onBackdropTap: () => ModalDataContext.of(context).close(),
-        child: AnimatedModal(
+        child: AnimatedOverlay(
           child: Container(
             width: 350,
             padding: const EdgeInsets.all(32),
@@ -320,10 +320,11 @@ class ExamplesPage extends StatelessWidget {
   // Example 5: Slide-Up Modal
   void _showExample5(BuildContext context) {
     ModalController.of(context).open(
-      builder: (context) => ModalScaffold(
+      builder: (context) => OverlayScaffold(
         alignment: Alignment.bottomCenter,
         onBackdropTap: () => ModalDataContext.of(context).close(),
-        child: SlideUpModal(
+        child: AnimatedOverlay(
+          slideFrom: const Offset(0, 1),
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(32),
@@ -377,9 +378,9 @@ class ExamplesPage extends StatelessWidget {
     int number,
   ) {
     ModalController.of(context).open(
-      builder: (context) => ModalScaffold(
+      builder: (context) => OverlayScaffold(
         onBackdropTap: () => ModalDataContext.of(context).close(),
-        child: AnimatedModal(
+        child: AnimatedOverlay(
           child: Container(
             width: 350,
             padding: const EdgeInsets.all(32),
