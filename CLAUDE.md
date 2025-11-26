@@ -6,15 +6,16 @@
 
 ## Architecture Summary
 
-### Core Architecture (v1.0.0)
+### Core Architecture (v2.0.0)
 
 The package uses Flutter's native `Overlay` system under the hood:
 
 1. **Controllers** (e.g., PopupController) access `Overlay.of(context)` when opening overlays
 2. **OverlayManager** creates `OverlayEntry` instances and inserts them into Flutter's Overlay
 3. **Each OverlayEntry** wraps the user's widget with `_OverlayDataProvider` for type-safe data access
-4. **Updates** call `entry.markNeedsBuild()` for efficient rendering
-5. **Removal** calls `entry.remove()` to clean up
+4. **OverlayEntry builder** looks up current overlay data from manager's list on each rebuild (v2.0.0 fix)
+5. **Updates** call `entry.markNeedsBuild()` for efficient rendering
+6. **Removal** calls `entry.remove()` to clean up
 
 **Key benefit**: No custom overlay system, no wrapper widgets - pure Flutter integration.
 
@@ -58,13 +59,13 @@ The package uses Flutter's native `Overlay` system under the hood:
 **Implemented:**
 - Core overlay management system
 - Popup functionality with controller
+- Modal functionality with controller (v2.0.0+)
 - Type-safe data passing with generics
 - Lifecycle callbacks (onDataChange, onClose)
-- Helper widgets (PopupScaffold, AnimatedPopup, PositionedPopup)
+- Helper widgets for popups and modals
 
 **Planned (Future):**
 - Toast controller and widgets
-- Modal controller and widgets
 - Dialog controller and widgets
 
 ## Code Style and Formatting (v0.0.2 Changes)
@@ -158,6 +159,7 @@ When adding toast, modal, or dialog functionality:
 - Core: `OverlayManager` (singleton), `OverlayDataContext`
 - Types: `OverlayInstance`, `OverlayType`, `OverlayCreateOptions`
 - Popup: `PopupController`, `PopupDataContext`, `PopupScaffold`, `AnimatedPopup`, `PositionedPopup`, `PopupPosition`
+- Modal (v2.0.0+): `ModalController`, `ModalDataContext`, `ModalScaffold`, `AnimatedModal`, `SlideUpModal`
 
 **Internal (not exported):**
 - `_OverlayDataProvider`: Internal inherited widget for data context
@@ -170,7 +172,22 @@ When adding toast, modal, or dialog functionality:
 
 ## Version History
 
-### v1.0.0 (Current)
+### v2.0.0 (Current)
+
+**Major Feature**: Modal support with interchangeable behavior - see [CHANGELOG.md](CHANGELOG.md)
+
+**Key Changes:**
+- **🎉 Modal Support**: New `ModalController` and `ModalDataContext` for managing modals
+  - Interchangeable behavior: only one modal at a time
+  - Full API parity with popups
+  - Modal widgets: `ModalScaffold`, `AnimatedModal`, `SlideUpModal`
+- **Bug fixes**: Fixed data update functionality and type cast errors from v1.0.0
+- No breaking changes from v1.0.0
+
+**Technical Details:**
+Modals use the same `OverlayManager` infrastructure as popups but with interchangeable behavior - opening a new modal automatically closes the previous one. Bug fixes ensure data updates trigger UI rebuilds correctly by having the OverlayEntry builder look up fresh overlay data on each rebuild.
+
+### v1.0.0
 
 **BREAKING CHANGES**: Major architectural refactor to use Flutter's native Overlay system - see [CHANGELOG.md](CHANGELOG.md)
 
@@ -182,6 +199,11 @@ When adding toast, modal, or dialog functionality:
 - Renamed `updateData()` → `updatePopupData()` in PopupController and PopupDataContext
 - Controllers now require `BuildContext` to access `Overlay.of(context)`
 - Native Flutter integration for better performance and compatibility
+- Popup support only (modals added in v2.0.0)
+
+**Known Issues (Fixed in v2.0.0):**
+- Data updates didn't trigger UI updates
+- Type cast errors with `Map<String, dynamic>`
 
 **Migration from v0.2.0:**
 ```dart
@@ -260,3 +282,4 @@ final overlays = OverlayManager.instance.overlays;
 - **v1.0.0+**: Data update methods renamed to be more specific (e.g., `updatePopupData`)
 - **v1.0.0+**: No wrapper widgets required - works with any Flutter app immediately
 - **v1.0.0+**: Custom managers available via `OverlayManager.custom()` for advanced use
+- **v2.0.0+**: Modal support with interchangeable behavior (only one modal at a time)

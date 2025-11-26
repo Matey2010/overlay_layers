@@ -1,3 +1,78 @@
+## 2.0.0
+
+### Features
+
+* **🎉 Modal Support**: New interchangeable modal system
+  - **`ModalController`**: Controller for managing modals with `open()`, `close()`, and `updateModalData()` methods
+  - **`ModalDataContext`**: Access and update modal data from within modal widgets
+  - **Interchangeable behavior**: Only one modal can be displayed at a time - opening a new modal automatically closes the previous one
+  - **Modal widgets**: `ModalScaffold`, `AnimatedModal`, and `SlideUpModal` for building modal UIs
+  - Same type-safe data passing and lifecycle management as popups
+  - Full API parity with popup system
+  - New files: [lib/src/modal/modal_controller.dart](lib/src/modal/modal_controller.dart), [lib/src/modal/modal_widgets.dart](lib/src/modal/modal_widgets.dart)
+
+**Example:**
+```dart
+// Open a modal (automatically closes any existing modal)
+ModalController.of(context).open(
+  builder: (context) => MyModalWidget(),
+  options: OverlayCreateOptions(initialData: {'title': 'Hello'}),
+);
+
+// Access data inside modal
+final modal = ModalDataContext.of<Map<String, dynamic>>(context);
+modal.updateModalData({'title': 'Updated'});
+modal.close();
+```
+
+### Bug Fixes
+
+* **Fixed data update functionality**: Overlay data updates now trigger UI rebuilds correctly
+  - The `OverlayEntry` builder was capturing the original overlay reference in a closure
+  - When `updatePopupData()` or `updateModalData()` was called, data was updated but UI didn't reflect changes
+  - **Solution**: Builder now looks up current overlay from manager's list on each rebuild
+  - Changes in [lib/src/core/overlay_manager.dart](lib/src/core/overlay_manager.dart#L46-L54)
+
+* **Fixed type cast error with Map<String, dynamic>**: Resolved runtime exception when merging map data
+  - Error: `type '_Map<dynamic, dynamic>' is not a subtype of type 'Map<String, dynamic>' in type cast`
+  - Occurred when calling `updatePopupData()` or `updateModalData()` with `Map<String, dynamic>` data
+  - **Solution**: Added explicit handling for `Map<String, dynamic>` type in `_mergeData` method
+  - Changes in [lib/src/core/overlay_manager.dart](lib/src/core/overlay_manager.dart#L129-L141)
+
+### Technical Details
+
+**Data Update Fix - Before (Broken):**
+```dart
+final entry = OverlayEntry(
+  builder: (context) => _OverlayDataProvider(
+    overlay: overlay, // Stale reference!
+    manager: this,
+    child: Builder(builder: builder),
+  ),
+);
+```
+
+**Data Update Fix - After (Fixed):**
+```dart
+final entry = OverlayEntry(
+  builder: (context) {
+    final currentOverlay = _overlays.firstWhere((o) => o.id == id);
+    return _OverlayDataProvider(
+      overlay: currentOverlay, // Fresh data on each rebuild!
+      manager: this,
+      child: Builder(builder: builder),
+    );
+  },
+);
+```
+
+### Migration from v1.0.0
+
+No breaking changes. Simply update to v2.0.0 to get:
+- ✅ New modal support with full feature set
+- ✅ Fixed data update functionality for popups
+- ✅ Resolved type cast errors
+
 ## 1.0.0
 
 ### BREAKING CHANGES
@@ -53,7 +128,6 @@ PopupController.withManager(context, customManager).open(...);
 * **Native Flutter Overlay integration**: Built on `OverlayEntry` API for better performance
 * **No setup required**: Works immediately with any Flutter app (MaterialApp, CupertinoApp, etc.)
 * **Singleton pattern**: Global `OverlayManager.instance` provides automatic access everywhere
-* **Modal support**: Interchangeable modals - only one modal at a time, opening new modal closes previous
 * **Popup support**: Multiple popups can coexist simultaneously
 * **Simplified architecture**: Removed custom overlay system and provider pattern, uses Flutter's standard approach
 * **Better performance**: Individual entry updates via `markNeedsBuild()` instead of full Stack rebuilds

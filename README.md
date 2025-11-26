@@ -21,7 +21,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  overlay_layers: ^1.0.0
+  overlay_layers: ^2.0.0
 ```
 
 ## Quick Start
